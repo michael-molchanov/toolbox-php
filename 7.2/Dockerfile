@@ -176,4 +176,4 @@ RUN curl --fail -sSL -o fd.tar.gz https://github.com/sharkdp/fd/releases/downloa
     && chmod +x /usr/local/bin/fd
 
 RUN mkdir -p /usr/toolbox/deps/toolbox
-COPY ./* /usr/toolbox/deps/toolbox/
+COPY --from=toolbox /usr/toolbox/deps/toolbox/* /usr/toolbox/deps/toolbox/

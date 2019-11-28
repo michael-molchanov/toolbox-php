@@ -2,13 +2,12 @@ ARG VARIANT_VERSION=0.35.1
 ARG UNICONF_VERSION=0.1.7
 ARG GOMPLATE_VERSION=v3.5.0
 ARG YQ_VERSION=2.4.0
+ARG TOOLBOX_VERSION=2.4.0
 
 FROM aroq/variant:$VARIANT_VERSION as variant
 FROM aroq/uniconf:$UNICONF_VERSION as uniconf
 FROM hairyhenderson/gomplate:$GOMPLATE_VERSION as gomplate
 FROM mikefarah/yq:$YQ_VERSION as yq
-
-# Self-reference to avoid rebuilding on each build:
 FROM aroq/toolbox:latest as toolbox
 
 FROM golang:1-alpine as builder
@@ -176,4 +175,4 @@ RUN curl --fail -sSL -o fd.tar.gz https://github.com/sharkdp/fd/releases/downloa
     && chmod +x /usr/local/bin/fd
 
 RUN mkdir -p /usr/toolbox/deps/toolbox
-COPY ./* /usr/toolbox/deps/toolbox/
+COPY --from=toolbox /usr/toolbox/deps/toolbox/* /usr/toolbox/deps/toolbox/
