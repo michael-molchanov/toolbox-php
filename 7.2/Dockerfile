@@ -29,6 +29,12 @@ RUN mkdir -p /root/.ssh
 ADD config/ssh /root/.ssh/config
 RUN chown root:root /root/.ssh/config && chmod 600 /root/.ssh/config
 
+COPY --from=yq /usr/bin/yq /usr/bin/yq
+COPY --from=variant /usr/bin/variant /usr/bin/
+COPY --from=gomplate /gomplate /usr/bin/
+COPY --from=uniconf /uniconf/uniconf /usr/bin/uniconf
+COPY --from=toolbox /usr/bin/go-getter /usr/bin
+
 RUN set -eux; apk add --no-cache --virtual .composer-rundeps \
   autoconf \
   automake \
