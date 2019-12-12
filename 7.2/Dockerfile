@@ -94,8 +94,6 @@ RUN set -xe \
     libedit-dev \
     libxml2-dev \
     sqlite-dev \
-    autoconf \
-    subversion \
     freetype-dev \
     libjpeg-turbo-dev \
     libmcrypt-dev \
