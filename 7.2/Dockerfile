@@ -120,6 +120,7 @@ RUN set -xe \
   && docker-php-ext-install redis \
   && php -m && php -r "new Redis();" \
   && pecl install channel://pecl.php.net/mcrypt-1.0.2 \
+  && docker-php-ext-install sockets \
   && docker-php-source delete \
   && runDeps="$( \
     scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
