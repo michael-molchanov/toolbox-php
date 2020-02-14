@@ -171,5 +171,5 @@ RUN drush core-status
 # Add git-secret package from edge testing
 RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing git-secret
 
-RUN mkdir -p /usr/toolbox/deps/toolbox
-COPY --from=toolbox /usr/toolbox/deps/toolbox/* /usr/toolbox/deps/toolbox/
+RUN mkdir -p /toolbox
+COPY --from=toolbox /toolbox/* /toolbox/
