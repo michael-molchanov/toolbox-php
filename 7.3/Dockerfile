@@ -62,12 +62,14 @@ RUN set -eux; apk add --no-cache --virtual .composer-rundeps \
   libmcrypt \
   libpq \
   libpng \
+  libtool \
   libxml2 \
   libxslt \
   libzip \
   make \
   mercurial \
   mysql-client \
+  nasm \
   openssh \
   openssh-client \
   libressl \
@@ -86,6 +88,19 @@ RUN set -eux; apk add --no-cache --virtual .composer-rundeps \
   zip \
   zlib \
   && rm -rf /var/lib/apt/lists/*
+
+# Set the MozJpeg version.
+ENV MOZJPEG_VERSION 3.3.1
+
+# Install MozJpeg.
+RUN curl -fsSL -o mozjpeg.tar.gz "https://github.com/mozilla/mozjpeg/archive/v${MOZJPEG_VERSION}.tar.gz" \
+  && tar -zxf mozjpeg.tar.gz \
+  && cd "mozjpeg-${MOZJPEG_VERSION}" \
+  && autoreconf -fiv \
+  && ./configure --prefix=/usr \
+  && make install\
+  && cd .. \
+  && rm -rf "mozjpeg-${MOZJPEG_VERSION}"
 
 # PHP modules.
 RUN set -xe \
