@@ -12,11 +12,10 @@ FROM aroq/toolbox:$TOOLBOX_VERSION as toolbox
 
 FROM golang:1-alpine as builder
 
-RUN set -eux; apk add --no-cache --virtual .composer-rundeps \
+RUN set -eux; apk add --no-cache --update --virtual .composer-rundeps \
   git \
   curl \
-  ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+  ca-certificates
 
 FROM php:7.4-cli-alpine
 
@@ -36,7 +35,7 @@ COPY --from=uniconf /uniconf/uniconf /usr/bin/uniconf
 COPY --from=toolbox /usr/bin/go-getter /usr/bin
 COPY --from=toolbox /usr/local/bin/fd /usr/local/bin
 
-RUN set -eux; apk add --no-cache --virtual .composer-rundeps \
+RUN set -eux; apk add --no-cache --update --virtual .composer-rundeps \
   autoconf \
   automake \
   bash \
@@ -70,6 +69,7 @@ RUN set -eux; apk add --no-cache --virtual .composer-rundeps \
   mercurial \
   mysql-client \
   nasm \
+  oniguruma \
   openssh \
   openssh-client \
   libressl \
@@ -86,8 +86,7 @@ RUN set -eux; apk add --no-cache --virtual .composer-rundeps \
   unzip \
   wget \
   zip \
-  zlib \
-  && rm -rf /var/lib/apt/lists/*
+  zlib
 
 # Set the MozJpeg version.
 ENV MOZJPEG_VERSION 3.3.1
@@ -104,7 +103,7 @@ RUN curl -fsSL -o mozjpeg.tar.gz "https://github.com/mozilla/mozjpeg/archive/v${
 
 # PHP modules.
 RUN set -xe \
-  && apk add --no-cache --virtual .build-deps \
+  && apk add --no-cache --update --virtual .build-deps \
     $PHPIZE_DEPS \
     curl-dev \
     libedit-dev \
@@ -118,6 +117,7 @@ RUN set -xe \
     libstdc++ \
     libxslt-dev \
     libzip-dev \
+    oniguruma-dev \
     openldap-dev \
     postgresql-dev \
     zlib-dev \
@@ -127,14 +127,14 @@ RUN set -xe \
   && docker-php-source extract \
   && cd /usr/src/php \
   && docker-php-ext-install bcmath zip bz2 gmp mbstring pcntl xsl mysqli pgsql pdo_mysql pdo_pgsql \
-  && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+  && docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
   && docker-php-ext-install gd \
   && docker-php-ext-configure ldap --with-libdir=lib/ \
   && docker-php-ext-install ldap \
   && git clone --branch="develop" https://github.com/phpredis/phpredis.git /usr/src/php/ext/redis \
   && docker-php-ext-install redis \
   && php -m && php -r "new Redis();" \
-  && pecl install channel://pecl.php.net/mcrypt-1.0.2 \
+  && pecl install channel://pecl.php.net/mcrypt-1.0.3 \
   && docker-php-ext-install sockets \
   && docker-php-source delete \
   && runDeps="$( \
@@ -143,7 +143,7 @@ RUN set -xe \
       | sort -u \
       | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
     )" \
-  && apk add --no-cache --virtual .composer-phpext-rundeps $runDeps \
+  && apk add --no-cache --update --virtual .composer-phpext-rundeps $runDeps \
   && apk del .build-deps
 
 RUN printf "# composer php cli ini settings\n\
