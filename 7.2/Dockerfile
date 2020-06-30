@@ -186,5 +186,11 @@ RUN drush core-status
 # Add git-secret package from edge testing
 RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing git-secret
 
+# Install docman.
+RUN apk add --update --no-cache ruby ruby-dev \
+  && rm -rf /var/cache/apk/* \
+  && gem install --no-doc etc \
+  && gem install --no-doc -v 0.0.107 docman
+
 RUN mkdir -p /toolbox
 COPY --from=toolbox /toolbox/* /toolbox/
