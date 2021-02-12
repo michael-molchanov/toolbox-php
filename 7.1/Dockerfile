@@ -136,6 +136,9 @@ RUN set -xe \
   && php -m && php -r "new Redis();" \
   # && pecl install channel://pecl.php.net/mcrypt-1.0.2 \
   && docker-php-ext-install sockets \
+  && pecl install apcu \
+  && docker-php-ext-enable apcu \
+  && pecl clear-cache \
   && docker-php-source delete \
   && runDeps="$( \
     scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
@@ -153,7 +156,7 @@ memory_limit=-1\n\
 
 ENV COMPOSER_ALLOW_SUPERUSER 1
 ENV COMPOSER_HOME /tmp
-ENV COMPOSER_VERSION 1.9.1
+ENV COMPOSER_VERSION 1.10.20
 
 RUN set -eux; \
   curl --silent --fail --location --retry 3 --output /tmp/installer.php --url https://raw.githubusercontent.com/composer/getcomposer.org/cb19f2aa3aeaa2006c0cd69a7ef011eb31463067/web/installer; \
@@ -174,7 +177,7 @@ RUN set -eux; \
 RUN composer global require hirak/prestissimo
 
 # Set the Drush version.
-ENV DRUSH_VERSION 8.3.0
+ENV DRUSH_VERSION 8.4.6
 
 # Install Drush 8 with the phar file.
 RUN curl -fsSL -o /usr/local/bin/drush "https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar" && \
