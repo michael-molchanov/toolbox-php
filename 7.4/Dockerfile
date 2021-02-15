@@ -53,6 +53,7 @@ RUN set -eux; apk add --no-cache --update --virtual .composer-rundeps \
   gmp-dev \
   grep \
   gzip \
+  imagemagick \
   jq \
   libbz2 \
   libffi \
@@ -114,6 +115,7 @@ RUN set -xe \
     libmcrypt-dev \
     libpng-dev \
     bzip2-dev \
+    imagemagick-dev \
     libstdc++ \
     libxslt-dev \
     libzip-dev \
@@ -138,6 +140,8 @@ RUN set -xe \
   && docker-php-ext-install sockets \
   && pecl install apcu \
   && docker-php-ext-enable apcu \
+  && pecl install imagick \
+  && docker-php-ext-enable imagick \
   && pecl clear-cache \
   && docker-php-source delete \
   && runDeps="$( \
