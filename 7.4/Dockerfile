@@ -62,6 +62,7 @@ RUN set -eux; apk add --no-cache --update --virtual .composer-rundeps \
   libmcrypt \
   libpq \
   libpng \
+  libpng-dev \
   libtool \
   libxml2 \
   libxslt \
@@ -87,7 +88,19 @@ RUN set -eux; apk add --no-cache --update --virtual .composer-rundeps \
   unzip \
   wget \
   zip \
-  zlib
+  zlib \
+  vips \
+  vips-dev \
+  libde265 \
+  x265-libs \
+  libheif \
+  libde265-dev \
+  libheif-dev \
+  fftw \
+  fftw-dev \
+  libimagequant \
+  libimagequant-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 # Set the MozJpeg version.
 ENV MOZJPEG_VERSION 3.3.1
@@ -113,7 +126,6 @@ RUN set -xe \
     freetype-dev \
     libjpeg-turbo-dev \
     libmcrypt-dev \
-    libpng-dev \
     bzip2-dev \
     imagemagick-dev \
     libstdc++ \
