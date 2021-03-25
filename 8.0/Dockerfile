@@ -11,7 +11,7 @@ FROM mikefarah/yq:$YQ_VERSION as yq
 FROM aroq/toolbox:$TOOLBOX_VERSION as toolbox
 FROM golang:1-alpine as builder
 
-FROM php:7.1-cli-alpine
+FROM php:8.0-cli-alpine
 
 LABEL maintainer "Michael Molchanov <mmolchanov@adyax.com>"
 
@@ -29,9 +29,7 @@ COPY --from=uniconf /uniconf/uniconf /usr/bin/uniconf
 COPY --from=toolbox /usr/bin/go-getter /usr/bin
 COPY --from=toolbox /usr/local/bin/fd /usr/local/bin
 
-RUN set -eux \
-  && echo -e "\n@edge http://nl.alpinelinux.org/alpine/edge/main\n@edgecommunity http://nl.alpinelinux.org/alpine/edge/community\n@edgetesting http://nl.alpinelinux.org/alpine/edge/testing" | tee -a /etc/apk/repositories \
-  && apk add --no-cache --update \
+RUN set -eux; apk add --no-cache --update \
   autoconf \
   automake \
   bash \
@@ -59,7 +57,7 @@ RUN set -eux \
   libedit-dev \
   libffi-dev \
   libheif-dev \
-  libimagequant-dev@edge \
+  libimagequant-dev \
   libjpeg-turbo-dev \
   libmcrypt-dev \
   libpng-dev \
@@ -105,13 +103,15 @@ ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
 # PHP modules.
 RUN set -xeu \
   && apk update \
-  && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ --with-png-dir=/usr/include/ \
+  && git clone --branch="master" https://github.com/Imagick/imagick.git /usr/src/php/ext/imagick \
+  && docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
   && docker-php-ext-configure ldap --with-libdir=lib/ \
   && docker-php-ext-install -j$(nproc) \
     bcmath \
     bz2 \
     gd \
     gmp \
+    imagick \
     imap \
     intl \
     ldap \
@@ -130,12 +130,12 @@ RUN set -xeu \
     xsl \
     zip \
   && pecl install apcu \
-  # && pecl install channel://pecl.php.net/mcrypt-1.0.4 \
-  && pecl install imagick \
+  && pecl install channel://pecl.php.net/mcrypt-1.0.4 \
+  # && pecl install imagick \
   && pecl install redis \
   && docker-php-ext-enable apcu \
-  && docker-php-ext-enable imagick \
-  # && docker-php-ext-enable mcrypt \
+  # && docker-php-ext-enable imagick \
+  && docker-php-ext-enable mcrypt \
   && docker-php-ext-enable redis \
   && pecl clear-cache \
   && php -m \

@@ -9,13 +9,7 @@ FROM aroq/uniconf:$UNICONF_VERSION as uniconf
 FROM hairyhenderson/gomplate:$GOMPLATE_VERSION as gomplate
 FROM mikefarah/yq:$YQ_VERSION as yq
 FROM aroq/toolbox:$TOOLBOX_VERSION as toolbox
-
 FROM golang:1-alpine as builder
-
-RUN set -eux; apk add --no-cache --update --virtual .composer-rundeps \
-  git \
-  curl \
-  ca-certificates
 
 FROM php:7.4-cli-alpine
 
@@ -35,77 +29,127 @@ COPY --from=uniconf /uniconf/uniconf /usr/bin/uniconf
 COPY --from=toolbox /usr/bin/go-getter /usr/bin
 COPY --from=toolbox /usr/local/bin/fd /usr/local/bin
 
-RUN set -eux; apk add --no-cache --update --virtual .composer-rundeps \
+RUN set -eux; apk add --no-cache --update \
   autoconf \
   automake \
   bash \
   build-base \
-  bzip2 \
+  bzip2-dev \
   ca-certificates \
   coreutils \
   curl \
-  freetype \
+  curl-dev \
+  fftw-dev \
+  freetype-dev \
   fuse \
   gawk \
   git \
   git-lfs \
-  gmp \
   gmp-dev \
   grep \
   gzip \
-  imagemagick \
+  icu-dev \
+  imagemagick-dev \
+  imap-dev \
   jq \
   libbz2 \
-  libffi \
+  libde265-dev \
+  libedit-dev \
   libffi-dev \
-  libjpeg-turbo \
-  libmcrypt \
-  libpq \
-  libpng \
+  libheif-dev \
+  libimagequant-dev \
+  libjpeg-turbo-dev \
+  libmcrypt-dev \
   libpng-dev \
+  libpq \
+  libressl-dev \
+  libstdc++ \
   libtool \
-  libxml2 \
-  libxslt \
-  libzip \
+  libxml2-dev \
+  libxslt-dev \
+  libzip-dev \
   make \
   mercurial \
   mysql-client \
   nasm \
-  oniguruma \
+  oniguruma-dev \
+  openldap-dev \
   openssh \
   openssh-client \
-  libressl \
-  libressl-dev \
   patch \
-  procps \
   postgresql-client \
+  postgresql-dev \
+  procps \
   rsync \
   sqlite \
+  sqlite-dev \
   strace \
   subversion \
   tar \
+  tidyhtml-dev \
   tini \
   unzip \
-  wget \
-  zip \
-  zlib \
-  vips \
   vips-dev \
-  libde265 \
+  wget \
   x265-libs \
-  libheif \
-  libde265-dev \
-  libheif-dev \
-  fftw \
-  fftw-dev \
-  libimagequant \
-  libimagequant-dev \
-  && rm -rf /var/lib/apt/lists/*
+  zip \
+  zlib-dev \
+  && rm -rf /var/cache/apk/*
 
-# Set the MozJpeg version.
-ENV MOZJPEG_VERSION 3.3.1
+
+RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ --allow-untrusted gnu-libiconv
+ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
+
+# PHP modules.
+RUN set -xeu \
+  && apk update \
+  && docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
+  && docker-php-ext-configure ldap --with-libdir=lib/ \
+  && docker-php-ext-install -j$(nproc) \
+    bcmath \
+    bz2 \
+    gd \
+    gmp \
+    imap \
+    intl \
+    ldap \
+    mbstring \
+    mysqli \
+    opcache \
+    pcntl \
+    pdo \
+    pdo_mysql \
+    pdo_pgsql \
+    pgsql \
+    soap \
+    sockets \
+    tidy \
+    xml \
+    xsl \
+    zip \
+  && pecl install apcu \
+  && pecl install channel://pecl.php.net/mcrypt-1.0.4 \
+  && pecl install imagick \
+  && pecl install redis \
+  && docker-php-ext-enable apcu \
+  && docker-php-ext-enable imagick \
+  && docker-php-ext-enable mcrypt \
+  && docker-php-ext-enable redis \
+  && pecl clear-cache \
+  && php -m \
+  && runDeps="$( \
+    scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
+      | tr ',' '\n' \
+      | sort -u \
+      | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+    )" \
+  && apk add --no-cache --update --virtual .composer-phpext-rundeps $runDeps \
+  && rm -rf /var/cache/apk/* \
+  && rm -rf /tmp/*
+
 
 # Install MozJpeg.
+ENV MOZJPEG_VERSION 3.3.1
 RUN curl -fsSL -o mozjpeg.tar.gz "https://github.com/mozilla/mozjpeg/archive/v${MOZJPEG_VERSION}.tar.gz" \
   && tar -zxf mozjpeg.tar.gz \
   && cd "mozjpeg-${MOZJPEG_VERSION}" \
@@ -115,85 +159,21 @@ RUN curl -fsSL -o mozjpeg.tar.gz "https://github.com/mozilla/mozjpeg/archive/v${
   && cd .. \
   && rm -rf "mozjpeg-${MOZJPEG_VERSION}"
 
-# PHP modules.
-RUN set -xe \
-  && apk add --no-cache --update --virtual .build-deps \
-    $PHPIZE_DEPS \
-    curl-dev \
-    libedit-dev \
-    libxml2-dev \
-    sqlite-dev \
-    freetype-dev \
-    libjpeg-turbo-dev \
-    libmcrypt-dev \
-    bzip2-dev \
-    imagemagick-dev \
-    libstdc++ \
-    libxslt-dev \
-    libzip-dev \
-    oniguruma-dev \
-    openldap-dev \
-    postgresql-dev \
-    zlib-dev \
-  && export CFLAGS="$PHP_CFLAGS" \
-    CPPFLAGS="$PHP_CPPFLAGS" \
-    LDFLAGS="$PHP_LDFLAGS" \
-  && docker-php-source extract \
-  && cd /usr/src/php \
-  && docker-php-ext-install bcmath zip bz2 gmp mbstring pcntl xsl mysqli pgsql pdo_mysql pdo_pgsql \
-  && docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
-  && docker-php-ext-install gd \
-  && docker-php-ext-configure ldap --with-libdir=lib/ \
-  && docker-php-ext-install ldap \
-  && git clone --branch="develop" https://github.com/phpredis/phpredis.git /usr/src/php/ext/redis \
-  && docker-php-ext-install redis \
-  && php -m && php -r "new Redis();" \
-  && pecl install channel://pecl.php.net/mcrypt-1.0.3 \
-  && docker-php-ext-install sockets \
-  && pecl install apcu \
-  && docker-php-ext-enable apcu \
-  && pecl install imagick \
-  && docker-php-ext-enable imagick \
-  && pecl clear-cache \
-  && docker-php-source delete \
-  && runDeps="$( \
-    scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
-      | tr ',' '\n' \
-      | sort -u \
-      | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-    )" \
-  && apk add --no-cache --update --virtual .composer-phpext-rundeps $runDeps \
-  && apk del .build-deps
-
 RUN printf "# composer php cli ini settings\n\
 date.timezone=UTC\n\
 memory_limit=-1\n\
 " > $PHP_INI_DIR/php-cli.ini
 
 ENV COMPOSER_ALLOW_SUPERUSER 1
-ENV COMPOSER_HOME /tmp
-ENV COMPOSER_VERSION 1.10.20
 
-RUN set -eux; \
-  curl --silent --fail --location --retry 3 --output /tmp/installer.php --url https://raw.githubusercontent.com/composer/getcomposer.org/cb19f2aa3aeaa2006c0cd69a7ef011eb31463067/web/installer; \
-  php -r " \
-    \$signature = '48e3236262b34d30969dca3c37281b3b4bbe3221bda826ac6a9a62d6444cdb0dcd0615698a5cbe587c3f0fe57a54d8f5'; \
-    \$hash = hash('sha384', file_get_contents('/tmp/installer.php')); \
-    if (!hash_equals(\$signature, \$hash)) { \
-      unlink('/tmp/installer.php'); \
-      echo 'Integrity check failed, installer is either corrupt or worse.' . PHP_EOL; \
-      exit(1); \
-    }"; \
-  php /tmp/installer.php --no-ansi --install-dir=/usr/bin --filename=composer --version=${COMPOSER_VERSION}; \
-  composer --ansi --version --no-interaction; \
-  rm -f /tmp/installer.php; \
-  find /tmp -type d -exec chmod -v 1777 {} +
-
-# Add composer downloads optimisation.
-RUN composer global require hirak/prestissimo
+# Install composer
+RUN wget https://getcomposer.org/installer \
+    && php installer --install-dir=/usr/local/bin/ --filename=composer --version=1.10.20 \
+    && rm installer \
+    && composer global --no-progress --no-interaction require hirak/prestissimo
 
 # Set the Drush version.
-ENV DRUSH_VERSION 8.4.6
+ENV DRUSH_VERSION 8.4.8
 
 # Install Drush 8 with the phar file.
 RUN curl -fsSL -o /usr/local/bin/drush "https://github.com/drush-ops/drush/releases/download/$DRUSH_VERSION/drush.phar" && \
