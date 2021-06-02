@@ -168,9 +168,8 @@ ENV COMPOSER_ALLOW_SUPERUSER 1
 
 # Install composer
 RUN wget https://getcomposer.org/installer \
-    && php installer --install-dir=/usr/local/bin/ --filename=composer --version=1.10.20 \
-    && rm installer \
-    && composer global --no-progress --no-interaction require hirak/prestissimo
+    && php installer --install-dir=/usr/local/bin/ --filename=composer --version=2.0.14 \
+    && rm installer
 
 # Set the Drush version.
 ENV DRUSH_VERSION 8.4.8
